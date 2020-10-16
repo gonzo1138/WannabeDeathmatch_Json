@@ -26,11 +26,7 @@ public class Fighter {
         this.isUp = true;
     }
 
-    public double recreate(int amount){
-
-    }
-
     public String getStats(){
-        return "WEIGHT: " + weight + "DEFENSE: " + defense + "AGILITY: " + agility + "FORCE: " + force + "CONFIDENCE: " + confidence + "ENDURANCE: " + endurance;
+        return "WEIGHT: " + weight + "\tDEFENSE: " + defense + "\tAGILITY: " + agility + "\tFORCE: " + force + "\tCONFIDENCE: " + confidence + "\tENDURANCE: " + endurance;
     }
 }
