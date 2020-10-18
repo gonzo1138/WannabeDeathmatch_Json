@@ -16,7 +16,7 @@ public class Fight {
         double cmp = 1.0 / (double) range;
         double rnd= Math.random();
         int cnt = 1;
-        while (cmp<rnd){        // todo: somethings wrong here... (boe & fishing)
+        while (cmp<rnd){
             cmp += cmp;
             cnt++;
         }
@@ -118,8 +118,9 @@ public class Fight {
                         fighters[i].endurance++;
                         if (fighters[i].weapon.needsAmmo){
                             String[] prep_projectile = {" and found a projectile for your weapon by the way. How nice!", " and enjoyed your time very much.", " and had an interesting chat with another fishermen."};
-                            if (dice(prep_projectile.length) == 1){
-                                System.out.print(prep_projectile[1]);
+                            int result = dice(prep_projectile.length);
+                            System.out.print(prep_projectile[result]);
+                            if (result == 1){
                                 fighters[i].weapon.ammo++;
                             } else if (flip(70)) {
                                 System.out.println(" And the fish you cought is so healthy!");
