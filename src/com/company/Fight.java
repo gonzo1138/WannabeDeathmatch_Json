@@ -1,24 +1,22 @@
 package com.company;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Fight {
 
-    int preparation;
-    int rounds;
+    //int preparation;
+    //int rounds;
+    //Fighter[] fighters;
+    //Weapon[] weapons;
     int fight;
-    Fighter[] fighters;
-    Weapon[] weapons;
     Fighter winner;
     boolean fightOver;
 
     private int dice(int range){
-        double cmp = 1 / range;
+        double cmp = 1.0 / (double) range;
         double rnd= Math.random();
-        int cnt = 0;
-        while (cmp<rnd){
+        int cnt = 1;
+        while (cmp<rnd){        // todo: somethings wrong here... (boe & fishing)
             cmp += cmp;
             cnt++;
         }
@@ -28,18 +26,46 @@ public class Fight {
     private boolean flip(double possibilityInPercent){
         boolean coin = false;
         double rnd = Math.random();
-        if (rnd <= possibilityInPercent/100) coin = true;
+        if (rnd <= possibilityInPercent/100.0) coin = true;
         return coin;
+    }
+
+    private void shoot(Fighter shooter){
+        double sidestep = 1;
+        if (shooter.opponent.action.equals("d")){
+            sidestep = shooter.opponent.agility/shooter.agility;
+        }
+        if (flip(((shooter.force*shooter.endurance)*shooter.confidence)*sidestep)){  // strike?
+            shooter.opponent.health -= (shooter.confidence / 10) * shooter.weapon.damage;
+            shooter.confidence++;
+            shooter.opponent.confidence--;
+        }
+    }
+
+    private void punch(Fighter puncher){
+        double sidestep = 1;
+        if (puncher.opponent.action.equals("d")){
+            sidestep = puncher.opponent.agility/puncher.agility;
+        }
+        if (flip(((puncher.force*puncher.endurance)*puncher.confidence)*sidestep)) {  // strike?
+            puncher.opponent.health -= (puncher.weight / 100) * (puncher.punch / puncher.opponent.defense);
+            puncher.confidence++;
+            puncher.opponent.confidence--;
+        }
     }
 
     public Fight(Fighter[] fighters, Weapon[] weapons, int preparation, int rounds){
 
         Scanner input = new Scanner(System.in);
+        //this.fighters = fighters;
+        //this.weapons = weapons;
+        //this.preparation = preparation;
+        //this.rounds = rounds;
         fightOver = false;
 
         System.out.println("\n- - - WELCOME TO THE FINAL BATTLEGROUND - - -\n");
 
-        // choose weapons
+        // choose weapons ----------------------------------------------------------------------------------------------
         for (int i= 0; i<fighters.length; i++){
             System.out.println(fighters[i].name + ", choose your Weapon and make your tribe " + fighters[i].tribe.name + " proud! These are available:");
             for (int j=0; j<weapons.length; j++){
@@ -48,13 +74,22 @@ public class Fight {
             fighters[i].weapon = weapons[input.nextInt()-1];
         }
 
-        // prepare for fight
+        // prepare for fight -------------------------------------------------------------------------------------------
         for (int i= 0; i<fighters.length; i++){
-            System.out.println("\n\nAlright " + fighters[i].name + ", choose your preparation wisely for the next fight. You can choose to eat, sleep, train with your weapon or go fishing.");
+            System.out.println("\n\nAlright " + fighters[i].name + ", choose your preparation wisely for the next fight. You can choose to eat, sleep, train yourself and with your weapon or go fishing.");
             for (int j=0; j<preparation; j++){
                 System.out.println("\n -\tRound " + (j+1) + " of " + preparation);
                 System.out.print("(e)at\t(s)leep\t(t)rain\tgo (f)ishing: ");
-                String in = input.next();
+                String in = "";
+                boolean answerNotGiven = true;          // input action (validator)
+                while (answerNotGiven) {
+                    in = input.next();
+                    if (in.equals("e") || in.equals("s") || in.equals("t") || in.equals("f")) {
+                        answerNotGiven = false;
+                    } else {
+                        System.out.println("What do you want to do again?!");
+                    }
+                }
                 switch (in){
                     case "e":
                         System.out.println("You had a proper meal. Yummy!");
@@ -79,28 +114,23 @@ public class Fight {
                         break;
                     case "f":
                         System.out.print("You relaxed at the lake");
+                        fighters[i].confidence++;
+                        fighters[i].endurance++;
                         if (fighters[i].weapon.needsAmmo){
                             String[] prep_projectile = {" and found a projectile for your weapon by the way. How nice!", " and enjoyed your time very much.", " and had an interesting chat with another fishermen."};
-                            int prep_projectile_result = dice(prep_projectile.length);
-                            if (prep_projectile_result == 1){
-                                fighters[i].confidence++;
-                                fighters[i].endurance++;
+                            if (dice(prep_projectile.length) == 1){
+                                System.out.print(prep_projectile[1]);
                                 fighters[i].weapon.ammo++;
-                            } else {
-                                fighters[i].confidence++;
-                                fighters[i].endurance++;
-                                if (flip(70)) {
-                                    System.out.println(" And the fish you cought is so healthy!");
-                                    fighters[i].health+=10;
-                                }
+                            } else if (flip(70)) {
+                                System.out.println(" And the fish you cought is so healthy!");
+                                fighters[i].health+=5;
                             }
                         } else {
                             System.out.print(", how beatiful the landscape is over there.");
-                            fighters[i].confidence++;
                             fighters[i].endurance++;
                             if (flip(70)) {
                                 System.out.println(" And the fish you cought is so healthy!");
-                                fighters[i].health+=10;
+                                fighters[i].health+=5;
                             }
                         }
                         System.out.println();
@@ -118,32 +148,33 @@ public class Fight {
         for (int i = 0; i < fighters.length; i++) {
             System.out.print(fighters[i].name.toUpperCase() + ", ");
         }
-        System.out.print("AND WHOEVER ELSE IS WATCHING...\n\nI want a save, clean fight. You can deliver a punch, use your weapon, deflect an incomming punch or shot, or try to distract your opponent by a prank.\n\n");
+        System.out.print("AND WHOEVER ELSE IS WATCHING...\n\nI want a save, clean fight. You can deliver a punch, use your weapon, deflect an incomming punch or shot, or try to distract your opponents by a prank.\n\n");
+        //todo: or (g)ive up ?
 
-        // start fighting
+        // start fighting ----------------------------------------------------------------------------------------------
         fight=1;
+        Fighter[] opponents = new Fighter[2];
         while (fight<fighters.length){                      // every winner of a fight fights the next fighter
-            Fighter fighter1 = fighters[fight];             // set fighters and their opponents
-            Fighter fighter2;
+            opponents[0] = fighters[fight];                 // set two fighters and their opponents
             if (fight==1){
-                fighter1.opponent = fighters[fight-1];
+                opponents[0].opponent = fighters[fight-1];
             } else {
-                fighter1.opponent = winner;
+                opponents[0].opponent = winner;
             }
-            fighter2 = fighter1.opponent;
-            fighter2.opponent = fighter1;
-            Fighter[] opponents = {fighter1, fighter2};
+            opponents[1] = opponents[0].opponent;
+            opponents[1].opponent = opponents[0];
 
-            System.out.print(fight + ". fight is " + fighter1.name + " vs. " + fighter2.name + "\n\nNOOOOOOW GET READYYYY TOOO RUMMMMMMBLEEEEEEE!!!\n\n");      // get ready to rumble
-            for (int j=0; j<rounds; j++) {
-                for (int i = 0; i < opponents.length; i++) {
+            // get ready to rumble
+            System.out.print(fight + ". fight is " + opponents[0].name + " vs. " + opponents[1].name + "\n\nNOOOOOOW GET READYYYY TOOO RUMMMMMMBLEEEEEEE!!!\n\n");
+            for (int j=0; j<rounds; j++) {                  // iterate rounds of fight
+                for (int i = 0; i < opponents.length; i++) {// iterate opponents per round
                     String in = "";
-                    System.out.println("\n" + opponents[i].name + ", your turn for Round " + (j + 1) + " of " + rounds + " of the Fight."); //\tYour current status is:\t" + opponent[i].getStats());
+                    System.out.println("\n" + opponents[i].name + ", your turn for Round " + (j + 1) + " of " + rounds + " of the Fight."); //\tYour current status is:\t" + opponents[i].getStats());
                     System.out.print("Choose to (a)muse, (s)trike, (d)eflect or (f)ire your weapon: ");
-                    boolean answerNotGiven = true;
-                    while(answerNotGiven){
+                    boolean answerNotGiven = true;          // input action (validator)
+                    while (answerNotGiven) {
                         in = input.next();
-                        if (in.equals("a")||in.equals("s")||in.equals("d")||in.equals("f")){
+                        if (in.equals("a") || in.equals("s") || in.equals("d") || in.equals("f")) {
                             answerNotGiven = false;
                         } else {
                             System.out.println("What do you want to do again?!");
@@ -151,8 +182,7 @@ public class Fight {
                     }
                     opponents[i].action = in;
 
-                    // comment on chosen action
-                    switch (in) {
+                    switch (opponents[i].action) {          // comment on chosen action
                         case "a":
                             System.out.println(opponents[i].name + " chooses to make the opponent laugh.");
                             break;
@@ -163,114 +193,163 @@ public class Fight {
                             System.out.println(opponents[i].name + " chooses to deflect an incoming attack.");
                             break;
                         case "f":
-                            System.out.println(opponents[i].name + " chooses to shoot the weapon at the opponent.");
+                            System.out.println(opponents[i].name + " chooses to use the weapon at the opponent.");
                             break;
                         default:
                             System.out.println("---");  // shouldn't happen
                     }
                 }
+                System.out.println();
                 /*                      cases: Att./Def.
-                   | a | s | d | f      1-4: both do the same   (p vs p & f vs f = Attack vs Attack)
-                ---+---+---+---+---     5:  strike vs amuse
-                 a | 1 | 5 |10 | 9      6:  strike vs deflect
-                 s | 5 | 2 | 6 | 7      7:  strike vs fire      (A vs A)
-                 d |10 | 6 | 3 | 8      8:  fire vs deflect
-                 f | 9 | 7 | 8 | 4      9:  fire vs amuse
-                                       10:  amuse vs deflect
+                   | a | s | d | f      1-4: both do the same   (s vs s & f vs f = Attack vs Attack, d vs d & a vs a = demoralize)
+                ---+---+---+---+---     5:  strike vs amuse     (Attack vs Deflect)
+                 a | 1 | 5 |10 | 9      6:  strike vs deflect   (Attack vs Deflect)
+                 s | 5 | 2 | 6 | 7      7:  strike vs fire      (Attack vs Attack)
+                 d |10 | 6 | 3 | 8      8:  fire vs deflect     (Attack vs Deflect)
+                 f | 9 | 7 | 8 | 4      9:  fire vs amuse       (Attack vs Deflect)
+                                       10:  amuse vs deflect    (Attack vs Deflect)
                  */
 
-                // both do the same
-                if (fighter1.action.equals(fighter2.action)){
-                    if (fighter1.action.equals("a")) {
-                        // case 1: both amuse
-                        System.out.println("Both fighters try to make the other laugh ver hard.");
+                // "both do the same"-scenarios:
+                if (opponents[0].action.equals(opponents[1].action)) {
+                    if (opponents[0].action.equals("a")) {  // case 1: both amuse
+                        System.out.println("Both fighters try to make the other laugh very hard.");
                         // by... dice
-                        //fighter1.name + " slips on a banana, a guy with a MAGA-hat threw at the fighting-ground. What's wrong with these people?!"
+                        //opponents[0].name + " slips on a banana, a guy with a MAGA-hat threw at the fighting-ground. What's wrong with these people?!"
                     }
-                    if (fighter1.action.equals("s")) {
-                        // case 2: both punch   (A vs A)
+                    if (opponents[0].action.equals("s")) {  // case 2: both punch   (A vs A)
                         System.out.println("Both fighters punch each other... The crowd roars excessively.");
-                        //fighter 1 p 2
-                        fighter2.health -= (fighter1.weight/100)*(fighter1.punch/fighter2.defense);
-                        fighter2.confidence--;
-                        fighter1.confidence++;
-                        //fighter 2 p 1
-                        fighter1.health -= (fighter2.weight/100)*(fighter2.punch/fighter1.defense);
-                        fighter1.confidence--;
-                        fighter2.confidence++;
+                        if (flip(50)) {    // flip who strikes punch first
+                            punch(opponents[0]);
+                            punch(opponents[1]);
+                        } else {
+                            punch(opponents[1]);
+                            punch(opponents[0]);
+                        }
                     }
-                    if (fighter1.action.equals("d")) {
-                        // case 3: both deflect
+                    if (opponents[0].action.equals("d")) {  // case 3: both deflect
                         System.out.println("Both fighters cover themselves while dancing around each other fearfully. The crowd starts booing...");
                     }
-                    if (fighter1.action.equals("f")) {
-                        // case 4: both fire weapon (A vs A)
+                    if (opponents[0].action.equals("f")) {  // case 4: both fire weapon (A vs A)
                         System.out.println("Both fighters fire their weapon at each other... The whole crowd holds it's breath.");
-                        // fighter 1 shoots 2
-                        fighter2.health -= (fighter1.confidence/10)*fighter1.weapon.damage;
-                        fighter1.health -= (fighter2.confidence/10)*fighter2.weapon.damage;
-                    }
-                    System.out.println(fighter1.getStats() + "\n" + fighter2.getStats());
-                }
-
-
-                // set roles for AvsD-rounds :
-                if (fighter1.action.equals("s")){
-                    if (fighter2.action.equals("a")) {
-                        attacker = fighter1;
-                        defender = fighter2;
-                    }
-                    if (fighter2.action.equals("d")){
-                        attacker = fighter1;
-                        defender = fighter2;
-                    }
-                }
-                if (fighter2.action.equals("s")){
-                    if (fighter1.action.equals("a")) {
-                        attacker = fighter2;
-                        defender = fighter1;
-                    }
-                    if (fighter1.action.equals("d")){
-                        attacker = fighter2;
-                        defender = fighter1;
+                        if (flip(50)) {    // flip who fires gun first
+                            shoot(opponents[0]);
+                            shoot(opponents[1]);
+                        } else {
+                            shoot(opponents[1]);
+                            shoot(opponents[0]);
+                        }
                     }
                 }
 
-                // attack vs defense
-                /*
-                // attacker punches
-                if (attacker.action.equals("p")){
-                    if (defender.action.equals("d")){
-                        // case 4
-                        System.out.println("p vs d");
-                        // ...
-                    } else if (defender.action.equals("a")){
-                        // case 5
-                        System.out.println("p vs a");
-                        // ...
+                // Attack vs Attack (strike vs fire) - scenario:
+                int strike = 0;
+                int fire = 0;
+                if (opponents[0].action.equals("s") && opponents[1].action.equals("f")) {   // case 5 & 6
+                    strike = 0;
+                    fire = 1;
+                    System.out.println("Both fighters ran towards each other. " + opponents[fire].name + " draws his weapon while " + opponents[strike].name + " strikes out to punch " + opponents[fire].name + "... The athmosphere is cooking!");
+                    if (flip(50)) {    // flip who strikes first, gun or fist
+                        shoot(opponents[fire]);
+                        punch(opponents[strike]);
+                    } else {
+                        punch(opponents[strike]);
+                        shoot(opponents[fire]);
                     }
-                // attacker amuses
-                } else if (attacker.action.equals("a") && defender.action.equals("d")){
-                    // case 6
-                    System.out.println(attacker.name + " makes " + defender.name + " laugh so hard, that he has to duck and cover his eyes...");
+                }
+                if (opponents[0].action.equals("f") && opponents[1].action.equals("s")) {   // or vice versa
+                    fire = 0;
+                    strike = 1;
+                    System.out.println("Both fighters ran towards each other. " + opponents[fire].name + " draws his weapon while " + opponents[strike].name + " strikes out to punch " + opponents[fire].name + "... The athmosphere is cooking!");
+                    if (flip(50)) {    // flip who strikes first, gun or fist
+                        shoot(opponents[fire]);
+                        punch(opponents[strike]);
+                    } else {
+                        punch(opponents[strike]);
+                        shoot(opponents[fire]);
+                    }
+                }
+
+                // set roles for Attack vs Deflect-scenarios:
+                int attacker = 0;
+                int defender = 0;
+                if (opponents[0].action.equals("s")) {   // case 5 & 6
+                    if (opponents[1].action.equals("a") || opponents[1].action.equals("d")) {
+                        attacker = 0;
+                        defender = 1;
+                    }
+                }
+                if (opponents[1].action.equals("s")) {   // or vice versa
+                    if (opponents[0].action.equals("a") || opponents[0].action.equals("d")) {
+                        attacker = 1;
+                        defender = 0;
+                    }
+                }
+                if (opponents[0].action.equals("f")) {   // case 8 & 9
+                    if (opponents[1].action.equals("d") || opponents[1].action.equals("a")) {
+                        attacker = 0;
+                        defender = 1;
+                    }
+                }
+                if (opponents[1].action.equals("f")) {   // or vice versa
+                    if (opponents[0].action.equals("d") || opponents[0].action.equals("a")) {
+                        attacker = 1;
+                        defender = 0;
+                    }
+                }
+                if (opponents[0].action.equals("a")) {   // case 10
+                    if (opponents[1].action.equals("d")) {
+                        attacker = 0;
+                        defender = 1;
+                    }
+                }
+                if (opponents[1].action.equals("a")) {   // or vice versa
+                    if (opponents[0].action.equals("d")) {
+                        attacker = 1;
+                        defender = 0;
+                    }
+                }
+
+                // conduct Attack vs Deflect-scenarios:
+                if (opponents[attacker].action.equals("s")) {       // cases 5-6
+                    if (opponents[defender].action.equals("a")){    // case 5
+                        //...
+                    }
+                    if (opponents[defender].action.equals("d")) {   // case 6
+                        //...
+                    }
+                }
+                if (opponents[attacker].action.equals("f")) {       // cases 8-9
+                    if (opponents[defender].action.equals("d")) {   // case 8
+                        //...
+                    }
+                    if (opponents[defender].action.equals("a")) {    // case 9
+                        //...
+                    }
+                }
+                if (opponents[attacker].action.equals("a") && opponents[defender].action.equals("d")) {   // case 10
+                    System.out.println(opponents[attacker].name + " makes " + opponents[defender].name + " laugh so hard, that he has to duck and cover his eyes...");
                     //...
                 }
-                */
-            }
-            System.out.println(opponents[i].name + " current status is:\t\t" + fighters[i].getStats());
 
-            // evaluation
-            if (!fighter2.isAlive) winner = fighter1;
-            else if (!fighter1.isAlive) winner = fighter2;
+
+                // end of round ----------------------------------------------------------------------------------------
+                System.out.println(opponents[0].name + " current status is:\t\t" + fighters[0].getStats());
+                System.out.println(opponents[1].name + " current status is:\t\t" + fighters[1].getStats());
+            }
+
+            // after-fight evaluation ----------------------------------------------------------------------------------
+            if (!opponents[1].isAlive) winner = opponents[0];
+            else if (!opponents[0].isAlive) winner = opponents[1];
             else {
-                if (fighter1.health > fighter2.health) winner = fighter1;
-                if (fighter1.health < fighter2.health) winner = fighter2;
-                if (fighter1.health == fighter2.health){
+                if (opponents[0].health > opponents[1].health) winner = opponents[0];
+                if (opponents[0].health < opponents[1].health) winner = opponents[1];
+                if (opponents[0].health == opponents[1].health){
                     System.out.println("The fight was draw. We have to repeat that brannigan immediately.");
                     fight--;
                 }
             }
-            if (fighter1.health != fighter2.health){
+            if (opponents[0].health != opponents[1].health){
                 if (fight+1 < fighters.length) System.out.println("And the winner is... " + winner + "!\nAlright, get yourself together for the next fight...\n");
             }
             fight++;

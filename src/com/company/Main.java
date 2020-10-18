@@ -16,6 +16,6 @@ public class Main {
         Weapon[] weapons = new Weapon[]{knife, ace, boe};
 
         // Call a fight with fighters, weapons, a number of rounds of preparation for all and the count of rounds of fight per two players (every winner fights the next player):
-        Fight fight = new Fight(fighters, weapons, 1, 10);
+        Fight fight = new Fight(fighters, weapons, 3, 5);
     }
 }
