@@ -15,6 +15,8 @@ public class Main {
         Weapon boe = new Weapon("Boe  ", 1.8, 3, 5, true, 3);
         Weapon[] weapons = new Weapon[]{knife, ace, boe};
 
+        knife.loadJson();
+
         // Call a fight with fighters, weapons, a number of rounds of preparation for all and the count of rounds of fight per two players (every winner fights the next player):
         Fight fight = new Fight(fighters, weapons, 3, 5);
     }
